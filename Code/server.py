@@ -1,80 +1,83 @@
 import socket
-import select
 from threading import *
-import sys
+import threading
 
-
+#Initializing server socket....
 serv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-"""
-the first argument AF_INET is the address domain of the socket. This is used when we have an Internet Domain
-with any two hosts
-The second argument is the type of socket. SOCK_STREAM means that data or characters are read in a continuous flow
-"""
-serv_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-print("Enter your IP Address: ")
-serv_host = input()
+#Initialize server ip and port#
 
-print("Enter your Port # ")
-client_port = int(input())
+print("Initializing server..... \n IP: localhost \n Port#: 1234")
 
 
-print("This is your IP: ",serv_host)
-print("This is your port: ",client_port)
-serv_socket.bind((serv_host, client_port)) 
-#binds the server to an entered IP address and at the specified port number. The client must be aware of these parameters
-serv_socket.listen(100)
-#listens for 100 active connections. This number can be increased as per convenience
+#Bind serve_socket and listen for connections
+serv_socket.bind(("localhost", 1234)) 
+serv_socket.listen()
 list_of_clients=[]
+names_of_clients = []
 
-def clientthread(conn, addr):
-    message = "WELCOME TO THE CHAT!"
-    bytemessage=bytes(message,"utf-8")
-    conn.send(bytemessage)
-    #sends a message to the client whose user object is conn
+def receive_send_client(client):
+
+    #Gives list of currently connected users
+    clientstrnames = ""
+    for i in range(len(names_of_clients)):
+        if i == 0:
+            clientstrnames = names_of_clients[i]
+        else:
+            clientstrnames = clientstrnames +", " + names_of_clients[i]
+
+    client.send("Connected Users: ".encode())
+    client.send(clientstrnames.encode())
+
+    
+    #Receives message from client and sends to all other clients
     while True:
             try:     
-                message = conn.recv(2048)    
-                if message:
-                    print("<" + addr[0] + "> " + message)
-                    message_to_send = "<" + addr[0] + "> " + message
-                    broadcast(message_to_send,conn)
-                    #prints the message and address of the user who just sent the message on the server terminal
-                else:
-                    remove(conn)
+                message = client.recv(2048)
+                broadcast(message)
+                
             except:
-                continue
+                #remove client from lists and close connection if client exited/error
+                listindex = list_of_clients.index(client)
+                nameofclient = names_of_clients[listindex]
+                broadcast(f"{nameofclient} has left the server".encode())
+                client.close()
 
-def broadcast(message,connection):
-    for clients in list_of_clients:
-        if clients!=connection:
+                names_of_clients.remove(nameofclient)
+                list_of_clients.remove(client)
+                
+                break
+                
+#Send message to all clients
+def broadcast(message):
+    for client in list_of_clients:
             try:
-                clients.send(message)
+                client.send(message)
             except:
-                clients.close()
-                remove(clients)
+                client.close()
 
-def remove(connection):
-    if connection in list_of_clients:
-        list_of_clients.remove(connection)
 
-while True:
-    conn, addr = serv_socket.accept()
-    """
-    Accepts a connection request and stores two parameters, conn which is a socket object for that user, and addr which contains
-    the IP address of the client that just connected
-    """
-    list_of_clients.append(conn)
-    print(addr[0] + " connected")
-    #maintains a list of clients for ease of broadcasting a message to all available people in the chatroom
-    #Prints the address of the person who just connected
-    clientthread(conn,addr)
-    print("Type EXIT to close server")
-    x = input()
-    if (x=="EXIT"):
-        serv_socket.close()
-        conn.close()
 
-    #creates and individual thread for every user that connects
-    
+
+def receive():
+    client,address = serv_socket.accept()
+    #add client address to list
+    print(address, " connected")
+    list_of_clients.append(client)
+
+    #get a name to call the client that isnt address
+    client.send("name".encode())
+    name = client.recv(1024).decode()
+    names_of_clients.append(name)
+    broadcast(f"{name} has connected to the server".encode())
+
+    thread = threading.Thread(target=receive_send_client, args=((client,)))
+    thread.start()
+
+#run server
+print("Server is running.....")
+receive()
+
+
+#Start infinite loop
 
