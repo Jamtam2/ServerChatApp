@@ -7,24 +7,27 @@ serv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 #Initialize server ip and port#
 
+serv_port = 1234
+serv_host = "localhost"
+
 print("Initializing server..... \n IP: localhost \n Port#: 1234")
 
 
 #Bind serve_socket and listen for connections
-serv_socket.bind(("localhost", 1234)) 
+serv_socket.bind((serv_host, serv_port)) 
 serv_socket.listen(10)
-list_of_clients=[]
-names_of_clients = []
+client_list=[]
+client_names =[]
 
-def receive_send_client(client):
+def receive_send(client):
 
     #Gives list of currently connected users
     clientstrnames = ""
-    for i in range(len(names_of_clients)):
+    for i in range(len(client_names)):
         if i == 0:
-            clientstrnames = names_of_clients[i]
+            clientstrnames = client_names[i]
         else:
-            clientstrnames = clientstrnames +", " + names_of_clients[i]
+            clientstrnames = clientstrnames +", " + client_names[i]
 
     client.send("Connected Users: ".encode())
     client.send(clientstrnames.encode())
@@ -39,19 +42,19 @@ def receive_send_client(client):
                 
             except:
                 #remove client from lists and close connection if client exited/error
-                listindex = list_of_clients.index(client)
-                nameofclient = names_of_clients[listindex]
+                listindex = client_list.index(client)
+                nameofclient = client_names[listindex]
                 broadcast(f"{nameofclient} has left the server".encode())
                 client.close()
 
-                names_of_clients.remove(nameofclient)
-                list_of_clients.remove(client)
+                client_names.remove(nameofclient)
+                client_list.remove(client)
                 
                 break
                 
 #Send message to all clients
 def broadcast(message):
-    for client in list_of_clients:
+    for client in client_list:
             try:
                 client.send(message)
             except:
@@ -60,31 +63,31 @@ def broadcast(message):
 
 
 
-def receive():
+def intialize_server():
     while True:
         client,address = serv_socket.accept()
 
         #add client address to list
         print(address, " connected")
-        list_of_clients.append(client)
+        client_list.append(client)
 
         #get a name to call the client that isnt address
         client.send("name".encode())
         name = client.recv(1024).decode()
-        names_of_clients.append(name)
-        if names_of_clients == []:
+        client_names.append(name)
+        if client_names == []:
             pass
         else:
-            print(names_of_clients)
+            print(client_names)
         broadcast(f"{name} has connected to the server".encode())
         print("You are now able to chat!")
 
-        thread = threading.Thread(target=receive_send_client, args=((client,)))
+        thread = threading.Thread(target=receive_send, args=((client,)))
         thread.start()
 
 #run server
 print("Server is running.....")
-receive()
+intialize_server()
 
 
 #Start infinite loop

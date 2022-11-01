@@ -10,8 +10,10 @@ name = input()
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+client_port = 1234
+client_host = "localhost"
 
-client_socket.connect(("localhost", 1234))
+client_socket.connect((client_host, client_port))
 
  
 def receive_messages():
@@ -29,7 +31,7 @@ def receive_messages():
 
 def send_messages():
     while True:
-        msg = input(f"[{name}] - ")
+        msg = input("")
         if msg == ".exit":
             print("Closing connection")
             client_socket.close()
