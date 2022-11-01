@@ -2,18 +2,19 @@ import socket
 import select
 import sys
  
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-if len(sys.argv) != 3:
-    print ("Correct usage: script, IP address, port number")
-    exit()
-IP_address = str(sys.argv[1])
-Port = int(sys.argv[2])
-server.connect((IP_address, Port))
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print("Enter the server IP Address: ")
+client_host = input()
+
+print("Enter the server Port # ")
+client_port = int(input())
+
+client_socket.connect((client_host, client_port))
  
 while True:
  
     # maintains a list of possible input streams
-    sockets_list = [sys.stdin, server]
+    sockets_list = [socket.socket(), client_socket]
  
     """ There are two possible input situations. Either the
     user wants to give manual input to send to other people,
@@ -26,12 +27,12 @@ while True:
     read_sockets,write_socket, error_socket = select.select(sockets_list,[],[])
  
     for socks in read_sockets:
-        if socks == server:
+        if socks == client_socket:
             message = socks.recv(2048)
             print (message)
         else:
-            message = sys.stdin.readline()
-            server.send(message)
+            message = input()
+            client_socket.send(message)
             sys.stdout.write("<You>")
             sys.stdout.write(message)
             sys.stdout.flush()
