@@ -1,13 +1,18 @@
 import socket
 from threading import *
 import threading
+from sys import exit
+
  
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 print("Please enter your name: ")
 name = input()
 
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+
 client_socket.connect(("localhost", 1234))
+
  
 def receive_messages():
     while True: 
@@ -18,18 +23,23 @@ def receive_messages():
             else:
                 print(message)
         except:
-            print("Error, closing connection! Sorry!")
+            print("Closing connection!")
             client_socket.close()
-            break
+            exit(0)
 
 def send_messages():
     while True:
-        sent_msg = f"[{name}] - {input()}" 
-        client_socket.send(sent_msg.encode())
+        msg = input(f"[{name}] - ")
+        if msg == ".exit":
+            print("Closing connection")
+            client_socket.close()
+            exit(0)
+        else:
+            sent_msg = f"[{name}] - {msg}\n" 
+            client_socket.send(sent_msg.encode())
 
 read_thread = threading.Thread(target=receive_messages)
 send_thread = threading.Thread(target=send_messages)
 
 read_thread.start()
 send_thread.start()
-

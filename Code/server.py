@@ -12,7 +12,7 @@ print("Initializing server..... \n IP: localhost \n Port#: 1234")
 
 #Bind serve_socket and listen for connections
 serv_socket.bind(("localhost", 1234)) 
-serv_socket.listen()
+serv_socket.listen(10)
 list_of_clients=[]
 names_of_clients = []
 
@@ -35,6 +35,7 @@ def receive_send_client(client):
             try:     
                 message = client.recv(2048)
                 broadcast(message)
+                
                 
             except:
                 #remove client from lists and close connection if client exited/error
@@ -60,19 +61,26 @@ def broadcast(message):
 
 
 def receive():
-    client,address = serv_socket.accept()
-    #add client address to list
-    print(address, " connected")
-    list_of_clients.append(client)
+    while True:
+        client,address = serv_socket.accept()
 
-    #get a name to call the client that isnt address
-    client.send("name".encode())
-    name = client.recv(1024).decode()
-    names_of_clients.append(name)
-    broadcast(f"{name} has connected to the server".encode())
+        #add client address to list
+        print(address, " connected")
+        list_of_clients.append(client)
 
-    thread = threading.Thread(target=receive_send_client, args=((client,)))
-    thread.start()
+        #get a name to call the client that isnt address
+        client.send("name".encode())
+        name = client.recv(1024).decode()
+        names_of_clients.append(name)
+        if names_of_clients == []:
+            pass
+        else:
+            print(names_of_clients)
+        broadcast(f"{name} has connected to the server".encode())
+        print("You are now able to chat!")
+
+        thread = threading.Thread(target=receive_send_client, args=((client,)))
+        thread.start()
 
 #run server
 print("Server is running.....")
